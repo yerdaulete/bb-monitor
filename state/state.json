@@ -54,7 +54,6 @@
 "other::https://apps.apple.com/us/app/acorns-invest-spare-change/id883324671",
 "other::https://play.google.com/store/apps/details?id=com.acorns.android&hl=en_US&gl=US",
 "website::https://acorns.com/",
-"website::https://www.gohenry.com/",
 "website::https://www.pixpay.fr/"
 ],
 "url": "https://bugcrowd.com/engagements/acorns"
@@ -4686,6 +4685,7 @@
 "website::https://marketplace.atlassian.com/apps/1217117/project-team-for-jira-cloud?hosting=cloud&tab=overview",
 "website::https://marketplace.atlassian.com/apps/1226592/great-gadgets-for-confluence-cloud?hosting=cloud&tab=overview",
 "website::https://marketplace.atlassian.com/apps/1237211/devops-gadgets-for-jira-insights-from-github-bb?hosting=cloud&tab=overview",
+"website::https://marketplace.atlassian.com/apps/1752044660/cumulative-flow-diagram-cfd-charts-for-agile-scrum-kanban?hosting=cloud&tab=overview",
 "website::https://marketplace.atlassian.com/apps/2077076462/wip-run-wip-aging-charts-for-scrum-kanban-scaled-agile?hosting=cloud&tab=overview",
 "website::https://marketplace.atlassian.com/apps/375826955/burndown-burnup-charts-with-forecast-for-agile-teams?hosting=cloud&tab=overview",
 "website::https://marketplace.atlassian.com/apps/607387265/velocity-throughput-charts-for-agile-scrum-kanban?hosting=cloud&tab=overview"
@@ -8757,7 +8757,8 @@
 "url::https://github.com/aws-samples",
 "url::www.awseducate.com",
 "wildcard::*.lostark.games.aws.dev",
-"wildcard::https://github.com/awslabs/*"
+"wildcard::https://github.com/awslabs/*",
+"wildcard::https://github.com/strands-agents/*"
 ],
 "url": "https://hackerone.com/aws_vdp"
 },
@@ -29945,15 +29946,23 @@
 "url::grantcountybank-p2.onlinebank.com",
 "url::grantcountybank.onlinebank.com",
 "url::greatergothambank.onlinebank.com",
+"url::greatmidwestbank-c2.configure-digital-cert.fiservapps.com",
+"url::greatmidwestbank-p2.onlinebank.com",
+"url::greatnationsbank-p2.onlinebank.com",
 "url::greatnhrestaurants.wgiftcard.com",
 "url::greatnhrestaurantsstore.wgiftcard.com",
 "url::greencountryfcu-admin.originate.fiservapps.com",
 "url::greencountryfcu.originate.fiservapps.com",
+"url::greenfieldsavings-p2.onlinebank.com",
 "url::greensboropostalcu-dc.cert.fec-dc.fiservapps.com",
+"url::greenvillefederal-c2.configure-digital-cert.fiservapps.com",
+"url::greenvillefederal-p2.onlinebank.com",
+"url::greenvillefederal.onlinebank.com",
 "url::greenwaybank-admin.originate.fiservapps.com",
 "url::greenwaybank.originate.fiservapps.com",
 "url::grinnell-p2.onlinebank.com",
 "url::grinnell.onlinebank.com",
+"url::grnbank-p2.onlinebank.com",
 "url::grnbank.onlinebank.com",
 "url::groupon.wgiftcard.com",
 "url::grouponstore.wgiftcard.com",
@@ -29991,10 +30000,12 @@
 "url::harusushistore.wgiftcard.com",
 "url::hastingsfcu-admin.originate.fiservapps.com",
 "url::hastingsfcu.originate.fiservapps.com",
+"url::havanabank-p2.onlinebank.com",
 "url::hawaiicountyfcu-dc.cert.fec-dc.fiservapps.com",
 "url::hawaiifcu-dc.cert.fec-dc.fiservapps.com",
 "url::hbc.olbanking.com",
 "url::hcbanks-admin.originate.fiservapps.com",
+"url::hcbanks-p2.onlinebank.com",
 "url::hcbanks.originate.fiservapps.com",
 "url::hcbt-admin.originate.fiservapps.com",
 "url::hcbt.originate.fiservapps.com",
@@ -44417,6 +44428,7 @@
 "other::Crypto",
 "other::Leaked Credentials",
 "other::Tier 3",
+"other::Wonder",
 "url::api.mercadolibre.com",
 "url::api.mercadopago.com",
 "url::biolibre.ar",
@@ -45146,7 +45158,6 @@
 "scope": [
 "downloadable_executables::Database Tools",
 "downloadable_executables::Drivers",
-"other::All Evergreen Assets (Excluding staging)",
 "other::App Services/Realm",
 "other::Atlas Charts",
 "other::Atlas Data Federation",
@@ -45156,17 +45167,18 @@
 "other::Cluster-To-Cluster sync",
 "other::Compass",
 "other::Enterprise Edition Products and Tools",
+"other::Evergreen",
 "other::Jira Projects",
 "other::MongoDB Assistant",
 "other::MongoDB Atlas",
 "other::MongoDB Atlas Agent Engine",
 "other::MongoDB Atlas Agent Engine CLI and First Party Libraries",
-"other::MongoDB Community Server",
 "other::MongoDB Connectors",
 "other::MongoDB IntelliJ Plugin",
 "other::MongoDB MCP Server",
 "other::MongoDB Owned GitHub Repositories",
 "other::MongoDB Partner Integrations",
+"other::MongoDB Server",
 "other::MongoDB Shell",
 "other::MongoDB Toolchain",
 "other::Relational Migrator",
@@ -46671,6 +46683,16 @@
 "wildcard::*.okx.com"
 ],
 "url": "https://hackerone.com/okg"
+},
+"hackerone:omarchy": {
+"name": "Omarchy",
+"payout": "",
+"pays": true,
+"platform": "hackerone",
+"scope": [
+"source_code::https://github.com/omacom/omarchy"
+],
+"url": "https://hackerone.com/omarchy"
 },
 "hackerone:omnicell": {
 "name": "Omnicell",
