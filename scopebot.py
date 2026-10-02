@@ -138,10 +138,18 @@ def save_offset(n):
 # ------------------------------------------------------------------- command handling
 HELP = ("<b>scope manager</b>\n"
         "/add d1.com *.d2.com — add roots\n"
-        "/remove d.com — remove a root\n"
+        "/remove d.com — remove by name\n"
+        "/remove — show a numbered list, then /remove 2 5 7 to bulk-delete by number\n"
+        "/remove all — clear everything\n"
         "/list — show current scope\n"
         "or just send a domain to add it\n\n"
         "Only authorized, in-scope wildcards. The scanner touches only what's listed here.")
+
+
+def numbered_list(roots):
+    lines = [f"scope ({len(roots)}):"]
+    lines += [f"{i}. {d}" for i, d in enumerate(sorted(roots), start=1)]
+    return "\n".join(lines)
 
 
 def handle(text, roots):
@@ -183,7 +191,38 @@ def handle(text, roots):
 
     if cmd == "/remove":
         if not args:
-            return "Usage: /remove domain.com", False
+            if not roots:
+                return "\U0001F4CB scope is empty — nothing to remove.", False
+            return ("\U0001F4CB " + numbered_list(roots) +
+                    "\n\nreply /remove <numbers> to delete, e.g. /remove 2 5 7\n"
+                    "or /remove all to clear everything"), False
+
+        if len(args) == 1 and args[0].lower() == "all":
+            n = len(roots)
+            if not n:
+                return "\U0001F4CB scope is already empty.", False
+            roots.clear()
+            return f"\u2796 removed all {n} domain(s)\nscope now: 0", True
+
+        if all(a.lstrip("-").isdigit() for a in args):
+            ordered = sorted(roots)  # same order numbered_list() prints, so numbers line up
+            removed, bad_idx = [], []
+            for n in sorted({int(a) for a in args}, reverse=True):
+                if 1 <= n <= len(ordered):
+                    removed.append(ordered[n - 1])
+                else:
+                    bad_idx.append(str(n))
+            for d in removed:
+                roots.discard(d)
+            msg = []
+            if removed:
+                msg.append("\u2796 removed: " + ", ".join(sorted(removed)))
+            if bad_idx:
+                msg.append("no such number: " + ", ".join(bad_idx))
+            msg.append(f"scope now: {len(roots)}")
+            return "\n".join(msg), bool(removed)
+
+        # fall back: remove by exact domain name(s), as before
         removed, miss = [], []
         for t in args:
             d = normalize(t) or t.strip().lower().lstrip("*.").strip(".")
@@ -202,7 +241,7 @@ def handle(text, roots):
 
     if cmd in ("/list", "/scope"):
         if roots:
-            return f"\U0001F4CB scope ({len(roots)}):\n" + "\n".join(sorted(roots)), False
+            return numbered_list(roots), False
         return "\U0001F4CB scope is empty — /add a domain to start.", False
 
     if cmd in ("/help", "/start"):
