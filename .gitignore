@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+
+# VPS-local only (modules 4 & 6) — never commit secrets or VPS-only state/logs
+.env
+state/endpoints.json
+state/cve.json
+logs/
