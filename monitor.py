@@ -218,6 +218,29 @@ def esc(s):
     return html.escape(str(s), quote=False)
 
 
+def extract_wildcard_roots(scope_entries):
+    """Pull apex domains that are explicitly WILDCARD-scoped out of a raw scope list —
+    the only kind recon.py's subfinder-based enumeration is safe to run against.
+    Itemized-only entries (type 'url'/'domain' with no matching wildcard) are left out
+    on purpose: enumerating under those would find hosts nobody authorized testing."""
+    roots = set()
+    for s in scope_entries:
+        typ, _, ident = s.partition("::")
+        ident = ident.strip()
+        is_wild = typ == "wildcard" or ident.startswith("*.") or "://*." in ident
+        if not is_wild:
+            continue
+        d = ident.split("://", 1)[-1]
+        if d.startswith("*."):
+            d = d[2:]
+        d = d.split("/", 1)[0].split(":", 1)[0].rstrip(".").lower()
+        # must reduce to a clean apex: no leftover '*' (e.g. Intigriti's "*.foo.*"
+        # multi-wildcard), not empty, not a bare IPv4 literal
+        if d and "*" not in d and "." in d and not d.replace(".", "").isdigit():
+            roots.add(d)
+    return sorted(roots)
+
+
 def format_event(key, c, kinds, new_scopes):
     tags = []
     if "new" in kinds:
@@ -250,6 +273,11 @@ def format_event(key, c, kinds, new_scopes):
             lines.append(f" \u2022 <code>{esc(ident)}</code> <i>{esc(typ)}</i>")
         if len(show) > SCOPE_PER_MSG:
             lines.append(f" \u2026 +{len(show) - SCOPE_PER_MSG} more")
+        roots = extract_wildcard_roots(show)
+        if roots:
+            lines.append("")
+            lines.append("\U0001F4A1 wildcard-safe \u2014 opt in with:")
+            lines.append(f"<code>/add {esc(' '.join(roots))}</code>")
     return "\n".join(lines)
 
 
