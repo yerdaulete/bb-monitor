@@ -1,0 +1,53 @@
+name: checks-monitor
+
+on:
+  schedule:
+    # 30 min after recon (recon is '0 */6'), so the host inventory is fresh.
+    - cron: '30 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      ping:
+        description: 'Send a Telegram connectivity test and exit'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: checks-monitor
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run checks
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          MAX_MSGS: '40'
+          PING: ${{ (github.event_name == 'workflow_dispatch' && inputs.ping) && '1' || '' }}
+        run: python checks.py
+
+      - name: Commit state
+        run: |
+          if [[ -z "$(git status --porcelain state/checks.json)" ]]; then
+            echo "no state change"; exit 0
+          fi
+          git config user.name  "checks-monitor[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add state/checks.json
+          git commit -m "update checks state [skip ci]"
+          for i in 1 2 3 4 5; do
+            if git push; then echo "pushed"; exit 0; fi
+            echo "push rejected, rebasing (attempt $i)"
+            git pull --rebase --autostash origin main || true
+          done
+          echo "could not push after retries"; exit 1
