@@ -46005,7 +46005,12 @@
 "url::cdn.nba.com",
 "url::cl-qa.nba.com",
 "url::cl.nba.com",
+"url::cleveland-dev.gleague.nba.com",
+"url::cleveland-qa.gleague.nba.com",
 "url::cleveland.gleague.nba.com",
+"url::coachellavalley-dev.gleague.nba.com",
+"url::coachellavalley-qa.gleague.nba.com",
+"url::coachellavalley.gleague.nba.com",
 "url::coalition-dev.nba.com",
 "url::coalition-qa.nba.com",
 "url::communityassist.nba.com",
@@ -46151,6 +46156,9 @@
 "url::lakeland-dev.gleague.nba.com",
 "url::lakeland-qa.gleague.nba.com",
 "url::lakeland.gleague.nba.com",
+"url::laketown-dev.gleague.nba.com",
+"url::laketown-qa.gleague.nba.com",
+"url::laketown.gleague.nba.com",
 "url::liberty-dev.wnba.com",
 "url::liberty-qa.wnba.com",
 "url::liberty-qa2.wnba.com",
@@ -46235,6 +46243,8 @@
 "url::oklahomacity-qa.gleague.nba.com",
 "url::oklahomacity.gleague.nba.com",
 "url::ontario.gleague.nba.com",
+"url::osceola-qa.gleague.nba.com",
+"url::osceola.gleague.nba.com",
 "url::pdfroster-dev.nba.com",
 "url::pdfroster-qa.nba.com",
 "url::pdfroster.nba.com",
@@ -46262,6 +46272,7 @@
 "url::saltlakecity-dev.gleague.nba.com",
 "url::saltlakecity-qa.gleague.nba.com",
 "url::saltlakecity.gleague.nba.com",
+"url::sandiego.gleague.nba.com",
 "url::santacruz-dev.gleague.nba.com",
 "url::santacruz-qa.gleague.nba.com",
 "url::santacruz.gleague.nba.com",
@@ -46332,6 +46343,8 @@
 "url::valkyries-dev.wnba.com",
 "url::valkyries-qa.wnba.com",
 "url::valkyries.wnba.com",
+"url::valley-qa.gleague.nba.com",
+"url::valley.gleague.nba.com",
 "url::videorulebook-dev.nba.com",
 "url::videorulebook-qa.nba.com",
 "url::videorulebook.nba.com",
@@ -51578,6 +51591,35 @@
 ],
 "url": "https://www.intigriti.com/programs/portofantwerp/portofantwerp/detail"
 },
+"intigriti:0f95dabb-d299-4574-befc-bb96a3bafb42": {
+"name": "Visma",
+"payout": "7,500 EUR",
+"pays": true,
+"platform": "intigriti",
+"scope": [
+"android::com.visma.blue",
+"ios::564141518",
+"url::accountsettings.connect.identity.stagaws.visma.com",
+"url::admin.stage.vismaonline.com",
+"url::ai-testing.maventa.com",
+"url::aiassistant.stage.vismaonline.com",
+"url::api.workbox.dk",
+"url::app.workbox.dk",
+"url::authz.workbox.dk",
+"url::autointerface.stag.visma.net",
+"url::ax-stage.maventa.com",
+"url::connect.identity.stagaws.visma.com",
+"url::eaccounting.stage.vismaonline.com",
+"url::eaccountingprinting.stage.vismaonline.com",
+"url::identity.stage.vismaonline.com",
+"url::myservices-api.stage.vismaonline.com",
+"url::myservices.stage.vismaonline.com",
+"url::oauth.developers.stagaws.visma.com",
+"url::photoservice.stage.vismaonline.com",
+"url::testing.maventa.com"
+],
+"url": "https://www.intigriti.com/programs/visma/visma/detail"
+},
 "intigriti:104ed53e-3c29-4d16-b89a-d322c9df5e9a": {
 "name": "MAGNIFIC VDP",
 "payout": "",
@@ -53627,30 +53669,6 @@
 ],
 "url": "https://www.intigriti.com/programs/randstad/yacht/detail"
 },
-"intigriti:bd22f48d-633e-4b26-bf71-e4778d41b247": {
-"name": "DataCamp",
-"payout": "1,500 EUR",
-"pays": true,
-"platform": "intigriti",
-"scope": [
-"android::com.datacamp",
-"ios::https://apps.apple.com/au/app/datacamp-learn-data-science/id1263413087",
-"url::app.datacamp.com/certification",
-"url::app.datacamp.com/groups",
-"url::app.datacamp.com/learn",
-"url::assessment-api.datacamp.com",
-"url::assessment-v2.datacamp.com",
-"url::assessment.datacamp.com",
-"url::campus.datacamp.com",
-"url::practice.datacamp.com",
-"url::profiles-api.datacamp.com",
-"url::projects.datacamp.com",
-"url::www.datacamp.com",
-"url::www.datacamp.com/datalab",
-"wildcard::*.datacamp.com"
-],
-"url": "https://www.intigriti.com/programs/datacamp/datacamp/detail"
-},
 "intigriti:bdbdcb88-3242-4d0b-8926-38775bd262bf": {
 "name": "Axel Springer SE Vulnerability Disclosure Program",
 "payout": "",
@@ -53731,6 +53749,23 @@
 "other::All NVIDIA assets are in scope! Including NVIDIA.com"
 ],
 "url": "https://www.intigriti.com/programs/nvidia/nvidiavdp/detail"
+},
+"intigriti:c5a9bbd6-2139-4ec9-bdcc-8e2a5082fd7e": {
+"name": "Venly",
+"payout": "5,000 EUR",
+"pays": true,
+"platform": "intigriti",
+"scope": [
+"url::api-wallet-sandbox.venly.io",
+"url::api-wallet.venly.io",
+"url::api.arkane.network",
+"url::connect.arkane.network",
+"url::connect.venly.io",
+"url::login.arkane.network",
+"url::login.venly.io",
+"url::wallet.venly.io"
+],
+"url": "https://www.intigriti.com/programs/arkane/arkanenetwork/detail"
 },
 "intigriti:c7272420-0cef-4366-87d2-278c06591799": {
 "name": "House of HR Vulnerability Disclosure Program",
@@ -54125,6 +54160,48 @@
 "url::media.nexuzhealth.be/patient/"
 ],
 "url": "https://www.intigriti.com/programs/uz%20leuven/nexuzhealthwebpacs/detail"
+},
+"intigriti:ed04d1ef-1aa3-49dd-92f1-06f50f9756b9": {
+"name": "TrueLayer",
+"payout": "6,000 EUR",
+"pays": true,
+"platform": "intigriti",
+"scope": [
+"other::C# SDK",
+"other::Java SDK",
+"other::PHP SDK",
+"other::React Native SDK",
+"other::Rust SDK",
+"other::TrueLayer for Magento (Magento plugin)",
+"other::Web SDK",
+"other::iOS SDK",
+"other::truelayer-signing",
+"url::api.mtls.truelayer[-sandbox].com",
+"url::api.truelayer[-sandbox].com",
+"url::app.truelayer[-sandbox].com",
+"url::auth.mtls.truelayer[-sandbox].com",
+"url::auth.truelayer[-sandbox].com",
+"url::console-backend.truelayer[-sandbox].com",
+"url::console.truelayer[-sandbox].com",
+"url::login-api.truelayer[-sandbox].com",
+"url::login.truelayer[-sandbox].com",
+"url::onboarding-api.truelayer.com",
+"url::pay-api.truelayer[-sandbox].com",
+"url::pay.truelayer[-sandbox].com",
+"url::paydirect.truelayer[-sandbox].com",
+"url::payment.truelayer[-sandbox].com",
+"url::payments-experience-api.truelayer[-sandbox].com",
+"url::sftp.reports.truelayer.com",
+"url::shop-pay-app-api.truelayer.com",
+"url::shopify-admin.truelayer.com",
+"url::user-authentication-api.truelayer[-sandbox].com",
+"url::users-api.truelayer.com",
+"url::webhooks.truelayer[-sandbox].com",
+"wildcard::*.truelayer.cloud",
+"wildcard::*.truelayer.com",
+"wildcard::*.truelayer.io"
+],
+"url": "https://www.intigriti.com/programs/truelayer/truelayer/detail"
 },
 "intigriti:ee2612e7-e188-492f-9bb2-ba48651523de": {
 "name": "Intergamma",
@@ -54627,7 +54704,7 @@
 "pays": false,
 "platform": "yeswehack",
 "scope": [
-"web-application::https://dojo-yeswehack.com/challenge-of-the-month/dojo-54"
+"web-application::https://dojo-yeswehack.com/challenge-of-the-month/dojo-55"
 ],
 "url": "https://yeswehack.com/programs/dojo"
 },
