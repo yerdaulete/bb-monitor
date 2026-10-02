@@ -1,0 +1,323 @@
+#!/usr/bin/env python3
+"""
+checks.py — high-confidence active checks on the hosts recon already discovered.
+Two things, both close to "found -> almost reportable":
+
+  TAKEOVER (#5): hosts with a dangling CNAME, matched against takeover fingerprints.
+                 🔴 confirmed = provider CNAME + the service's error-page signature.
+                 🟡 possible  = provider CNAME + a dead status (403/404/503) but no sig.
+  LEAK (#7):     exposed /.git, /.env, AWS creds — strict content validation + a
+                 soft-404 guard so a catch-all 200 page doesn't trigger false hits.
+
+Input: state/recon.json (recon's host inventory). Run recon first.
+Output: one Telegram message per NEW finding. No baseline suppression — a live leak or
+takeover on run #1 is a real finding, you want it now. Each finding alerts once.
+
+These are signals at high confidence, not proof. You still verify and claim: a key may be
+revoked, a takeover still has to be demonstrated. This narrows the field; it doesn't report.
+
+Env:
+  TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID  (required)
+  RECON_FILE   default state/recon.json
+  STATE_FILE   default state/checks.json
+  MAX_MSGS     default 40
+  MAX_HOSTS    default 1000
+  TIMEOUT      default 8  (seconds per request)
+  DRY_RUN / PING
+"""
+
+import html
+import json
+import os
+import re
+import ssl
+import sys
+import time
+import urllib.error
+import urllib.request
+
+RECON_FILE = os.environ.get("RECON_FILE", "state/recon.json")
+STATE_FILE = os.environ.get("STATE_FILE", "state/checks.json")
+MAX_MSGS = int(os.environ.get("MAX_MSGS", "40"))
+MAX_HOSTS = int(os.environ.get("MAX_HOSTS", "1000"))
+TIMEOUT = int(os.environ.get("TIMEOUT", "8"))
+DRY_RUN = os.environ.get("DRY_RUN", "") in ("1", "true", "yes")
+TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+CHAT = os.environ.get("TELEGRAM_CHAT_ID", "")
+
+_SSL = ssl.create_default_context()
+_SSL.check_hostname = False
+_SSL.verify_mode = ssl.CERT_NONE   # probing error pages; don't fail on broken TLS
+
+DEAD = {403, 404, 410, 503, None}
+
+
+# ------------------------------------------------------------ takeover fingerprints
+# Well-known, stable services. Not exhaustive — nuclei/dnsReaper cover the long tail.
+FINGERPRINTS = [
+    {"name": "AWS S3", "cnames": ["s3.amazonaws", "s3-website", ".amazonaws.com"],
+     "sigs": ["NoSuchBucket", "The specified bucket does not exist"]},
+    {"name": "GitHub Pages", "cnames": [".github.io"],
+     "sigs": ["There isn't a GitHub Pages site here",
+              "For root URLs (like http://example.com/) you must provide an index.html"]},
+    {"name": "Heroku", "cnames": ["herokudns.com", "herokuapp.com", "herokussl"],
+     "sigs": ["No such app", "no-such-app.html"]},
+    {"name": "Shopify", "cnames": [".myshopify.com"],
+     "sigs": ["Sorry, this shop is currently unavailable", "Only one step left"]},
+    {"name": "Fastly", "cnames": [".fastly.net", "fastlylb"],
+     "sigs": ["Fastly error: unknown domain",
+              "Please check that this domain has been added to a service"]},
+    {"name": "Pantheon", "cnames": ["pantheonsite.io"],
+     "sigs": ["The gods are wise", "404 error unknown site"]},
+    {"name": "Tumblr", "cnames": ["domains.tumblr.com"],
+     "sigs": ["Whatever you were looking for doesn't currently exist",
+              "There's nothing here."]},
+    {"name": "WordPress", "cnames": [".wordpress.com"],
+     "sigs": ["Do you want to register"]},
+    {"name": "Ghost", "cnames": [".ghost.io"],
+     "sigs": ["The thing you were looking for is no longer here", "Domain error"]},
+    {"name": "Surge.sh", "cnames": ["surge.sh"],
+     "sigs": ["project not found"]},
+    {"name": "Bitbucket", "cnames": ["bitbucket.io"],
+     "sigs": ["Repository not found"]},
+    {"name": "Unbounce", "cnames": ["unbouncepages.com"],
+     "sigs": ["The requested URL was not found on this server"]},
+    {"name": "Readme.io", "cnames": [".readme.io"],
+     "sigs": ["Project doesnt exist... yet!"]},
+    {"name": "Azure", "cnames": [".azurewebsites.net", ".cloudapp.net", ".trafficmanager.net"],
+     "sigs": ["404 Web Site not found"]},
+    {"name": "Netlify", "cnames": [".netlify.app", ".netlify.com"],
+     "sigs": ["Not Found - Request ID"]},
+]
+
+
+# --------------------------------------------------------------- leak validators
+def _git_head(b):
+    return bool(re.match(r"^(ref:\s+refs/|[0-9a-f]{40}\b)", b.strip()))
+
+
+def _git_config(b):
+    return "[core]" in b and "repositoryformatversion" in b
+
+
+def _env(b):
+    if "<html" in b.lower() or "<!doctype" in b.lower():
+        return False
+    return len(re.findall(r"(?m)^[A-Z][A-Z0-9_]{1,}=", b)) >= 2
+
+
+def _aws(b):
+    return "aws_access_key_id" in b.lower()
+
+
+LEAK_PATHS = [
+    ("/.git/HEAD", _git_head, "exposed .git"),
+    ("/.git/config", _git_config, "exposed .git/config"),
+    ("/.env", _env, "exposed .env"),
+    ("/.env.local", _env, "exposed .env.local"),
+    ("/.aws/credentials", _aws, "exposed AWS credentials"),
+]
+
+
+# ----------------------------------------------------------------------- http
+def fetch(url):
+    """Return (status:int|None, body:str). Never raises."""
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "recon-checks/1.0"})
+        with urllib.request.urlopen(req, timeout=TIMEOUT, context=_SSL) as r:
+            return r.status, r.read(16384).decode("utf-8", "replace")
+    except urllib.error.HTTPError as e:
+        try:
+            body = e.read(16384).decode("utf-8", "replace")
+        except Exception:
+            body = ""
+        return e.code, body
+    except Exception:
+        return None, ""
+
+
+def base_url(host, info):
+    u = info.get("url")
+    if u:
+        return u.rstrip("/")
+    return "https://" + host
+
+
+# ---------------------------------------------------------------------- checks
+def check_takeover(host, info):
+    cnames = info.get("cname") or []
+    if not cnames:
+        return None
+    joined = " ".join(cnames).lower()
+    fp = next((f for f in FINGERPRINTS
+               if any(c in joined for c in f["cnames"])), None)
+    if not fp:
+        return None
+    st, body = fetch(base_url(host, info) + "/")
+    if any(sig in body for sig in fp["sigs"]):
+        return {"kind": "takeover", "host": host, "service": fp["name"],
+                "cname": cnames, "status": st, "confirmed": True}
+    if st in DEAD:
+        return {"kind": "takeover?", "host": host, "service": fp["name"],
+                "cname": cnames, "status": st, "confirmed": False}
+    return None
+
+
+def check_leaks(host, info):
+    base = base_url(host, info)
+    # soft-404 baseline: a random path that should not exist
+    _, baseline = fetch(base + "/zz-%s-nope" % int(time.time()))
+    out = []
+    for path, valid, label in LEAK_PATHS:
+        st, body = fetch(base + path)
+        if st == 200 and body and body != baseline and valid(body):
+            snippet = body.strip().splitlines()[0][:80] if body.strip() else ""
+            out.append({"kind": "leak", "host": host, "path": path,
+                        "label": label, "snippet": snippet})
+    return out
+
+
+# ---------------------------------------------------------------------- format
+def esc(s):
+    return html.escape(str(s), quote=False)
+
+
+def key_of(f):
+    if f["kind"] == "leak":
+        return f"leak:{f['host']}:{f['path']}"
+    return f"{f['kind']}:{f['host']}"
+
+
+def rank(f):
+    # confirmed takeover & .git/.env first; possible takeover last
+    order = {"takeover": 0, "leak": 1, "takeover?": 2}
+    return (order.get(f["kind"], 3), f["host"])
+
+
+def format_finding(f):
+    if f["kind"] == "leak":
+        lines = [f"<b>\U0001F534 LEAK · {esc(f['label'])}</b>",
+                 f"<code>{esc(f['host'] + f['path'])}</code>"]
+        if f["snippet"]:
+            lines.append("\u21B3 <code>" + esc(f["snippet"]) + "</code>")
+        lines.append(f"\U0001F517 https://{esc(f['host'])}{esc(f['path'])}")
+        return "\n".join(lines)
+
+    confirmed = f["confirmed"]
+    head = ("\U0001F534 TAKEOVER (likely)" if confirmed
+            else "\U0001F7E1 POSSIBLE TAKEOVER")
+    lines = [f"<b>{head} · {esc(f['service'])}</b>",
+             f"<code>{esc(f['host'])}</code>",
+             "CNAME: " + esc(", ".join(f["cname"][:3]))]
+    tail = f"HTTP {f['status']}"
+    tail += ' · matched signature' if confirmed else ' · no signature — verify manually'
+    lines.append("\u21B3 " + tail)
+    lines.append(f"\U0001F517 https://{esc(f['host'])}")
+    return "\n".join(lines)
+
+
+# ----------------------------------------------------------------------- tg / state
+def tg_send(text):
+    if DRY_RUN:
+        print("\n----- TELEGRAM (dry-run) -----\n" + text)
+        return
+    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+    payload = json.dumps({"chat_id": CHAT, "text": text, "parse_mode": "HTML",
+                          "disable_web_page_preview": True}).encode()
+    for _ in range(5):
+        try:
+            req = urllib.request.Request(url, data=payload,
+                                         headers={"Content-Type": "application/json"})
+            with urllib.request.urlopen(req, timeout=30) as r:
+                r.read()
+            return
+        except urllib.error.HTTPError as e:
+            body = e.read().decode(errors="replace")
+            if e.code == 429:
+                try:
+                    wait = json.loads(body)["parameters"]["retry_after"]
+                except Exception:
+                    wait = 3
+                time.sleep(wait + 1)
+                continue
+            print(f"[tg] HTTP {e.code}: {body}")
+            return
+        except Exception as e:
+            print(f"[tg] error: {e}")
+            time.sleep(2)
+
+
+def load_recon():
+    try:
+        return json.load(open(RECON_FILE)).get("hosts", {})
+    except FileNotFoundError:
+        return {}
+    except Exception as e:
+        print(f"[recon] unreadable: {e}")
+        return {}
+
+
+def load_state():
+    try:
+        return set(json.load(open(STATE_FILE)).get("findings", []))
+    except Exception:
+        return set()
+
+
+def save_state(keys):
+    os.makedirs(os.path.dirname(STATE_FILE) or ".", exist_ok=True)
+    json.dump({"findings": sorted(keys),
+               "updated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())},
+              open(STATE_FILE, "w"), indent=0)
+
+
+# ------------------------------------------------------------------------ main
+def main():
+    if not TOKEN or not CHAT:
+        sys.exit("TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID must be set")
+
+    if os.environ.get("PING", "") in ("1", "true", "yes"):
+        tg_send("\u2705 checks-monitor connected.")
+        print("ping sent")
+        return
+
+    hosts = load_recon()
+    if not hosts:
+        print(f"[recon] no inventory in {RECON_FILE} yet — run recon first. Nothing to do.")
+        return
+
+    # only hosts that are reachable web (recon recorded a status)
+    web = {h: i for h, i in hosts.items() if i.get("status") is not None}
+    print(f"[checks] {len(web)} web host(s) from {len(hosts)} tracked")
+
+    seen = load_state()
+    findings = []
+    for n, (host, info) in enumerate(sorted(web.items())):
+        if n >= MAX_HOSTS:
+            print(f"[checks] host cap {MAX_HOSTS} reached"); break
+        t = check_takeover(host, info)
+        if t:
+            findings.append(t)
+        findings.extend(check_leaks(host, info))
+        time.sleep(0.2)
+
+    findings.sort(key=rank)
+    new = [f for f in findings if key_of(f) not in seen]
+    print(f"[checks] {len(findings)} finding(s), {len(new)} new")
+
+    sent = 0
+    for f in new:
+        if sent >= MAX_MSGS:
+            tg_send(f"\u2795 +{len(new) - sent} more new findings this run (raise MAX_MSGS).")
+            break
+        tg_send(format_finding(f))
+        sent += 1
+        time.sleep(1)
+
+    if new:
+        save_state(seen | {key_of(f) for f in new})
+        print(f"[state] +{len(new)} findings recorded")
+
+
+if __name__ == "__main__":
+    main()
