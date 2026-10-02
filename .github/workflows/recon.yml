@@ -1,0 +1,67 @@
+name: recon-monitor
+
+on:
+  schedule:
+    # Every 6h (UTC). Recon infra changes slowly and this one touches targets,
+    # so don't crank it to minutes. Daily ('0 6 * * *') is also fine.
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      ping:
+        description: 'Send a Telegram connectivity test and exit (no baseline/diff)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: recon-monitor
+  cancel-in-progress: false
+
+jobs:
+  recon:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: Install recon tools
+        run: |
+          go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
+          go install github.com/projectdiscovery/dnsx/cmd/dnsx@latest
+          go install github.com/projectdiscovery/httpx/cmd/httpx@latest
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Run recon
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          MAX_MSGS: '50'
+          HTTPX_RATELIMIT: '50'
+          PING: ${{ (github.event_name == 'workflow_dispatch' && inputs.ping) && '1' || '' }}
+        run: python recon.py
+
+      - name: Commit state
+        run: |
+          if [[ -z "$(git status --porcelain state/recon.json)" ]]; then
+            echo "no state change"; exit 0
+          fi
+          git config user.name  "recon-monitor[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add state/recon.json
+          git commit -m "update recon state [skip ci]"
+          # retry/rebase: the program-monitor workflow may push to state/ too
+          for i in 1 2 3 4 5; do
+            if git push; then echo "pushed"; exit 0; fi
+            echo "push rejected, rebasing (attempt $i)"
+            git pull --rebase --autostash origin main || true
+          done
+          echo "could not push state after retries"; exit 1
