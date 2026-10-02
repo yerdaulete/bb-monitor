@@ -1,0 +1,45 @@
+name: scopebot
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'   # poll Telegram for /add /remove /list commands
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: scopebot
+  cancel-in-progress: false
+
+jobs:
+  scopebot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Poll and apply scope commands
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python scopebot.py
+
+      - name: Commit scope + offset
+        run: |
+          if [[ -z "$(git status --porcelain scope.txt state/tg_offset.json)" ]]; then
+            echo "nothing to commit"; exit 0
+          fi
+          git config user.name  "scopebot[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scope.txt state/tg_offset.json
+          git commit -m "update scope [skip ci]"
+          for i in 1 2 3 4 5; do
+            if git push; then echo "pushed"; exit 0; fi
+            echo "push rejected, rebasing (attempt $i)"
+            git pull --rebase --autostash origin main || true
+          done
+          echo "could not push after retries"; exit 1
