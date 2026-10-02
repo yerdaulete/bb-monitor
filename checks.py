@@ -55,39 +55,74 @@ DEAD = {403, 404, 410, 503, None}
 # ------------------------------------------------------------ takeover fingerprints
 # Well-known, stable services. Not exhaustive — nuclei/dnsReaper cover the long tail.
 FINGERPRINTS = [
+    {"name": "AWS CloudFront", "cnames": [".cloudfront.net"],
+     "sigs": ["ERROR: The request could not be satisfied"],
+     "claim": ["CloudFront > Create distribution > any origin > Configure domains > add the hostname.",
+               "No conflict there = name's free AWS-wide (uniqueness is global, not per-account).",
+               "ACM TLS step needs DNS control you won't have for someone else's domain — that's",
+               "expected, not a dead end. Report with this + the signature match; ask the program",
+               "to finish verification on their side."]},
     {"name": "AWS S3", "cnames": ["s3.amazonaws", "s3-website", ".amazonaws.com"],
-     "sigs": ["NoSuchBucket", "The specified bucket does not exist"]},
+     "sigs": ["NoSuchBucket", "The specified bucket does not exist"],
+     "claim": ["Bucket name is usually the CNAME target's first label, e.g. bucket.s3.amazonaws.com.",
+               "aws s3 mb s3://<bucket-name>  — succeeds only if the name is truly free.",
+               "Put a harmless index.html there as PoC, screenshot it loading on the real hostname."]},
     {"name": "GitHub Pages", "cnames": [".github.io"],
      "sigs": ["There isn't a GitHub Pages site here",
-              "For root URLs (like http://example.com/) you must provide an index.html"]},
+              "For root URLs (like http://example.com/) you must provide an index.html"],
+     "claim": ["New public repo on your own account (any name) > add a file named CNAME containing",
+               "the target hostname > Settings > Pages > enable, branch = main.",
+               "Claiming is per-repo via that CNAME file, not a central namespace."]},
     {"name": "Heroku", "cnames": ["herokudns.com", "herokuapp.com", "herokussl"],
-     "sigs": ["No such app", "no-such-app.html"]},
+     "sigs": ["No such app", "no-such-app.html"],
+     "claim": ["heroku create  (new app on your account)",
+               "heroku domains:add <hostname> -a <your-app>",
+               "Rejected = still claimed elsewhere; accepted = yours."]},
     {"name": "Shopify", "cnames": [".myshopify.com"],
-     "sigs": ["Sorry, this shop is currently unavailable", "Only one step left"]},
+     "sigs": ["Sorry, this shop is currently unavailable", "Only one step left"],
+     "claim": ["Free Shopify dev store > Online Store > Domains > Connect existing domain >",
+               "enter the target hostname."]},
     {"name": "Fastly", "cnames": [".fastly.net", "fastlylb"],
      "sigs": ["Fastly error: unknown domain",
-              "Please check that this domain has been added to a service"]},
+              "Please check that this domain has been added to a service"],
+     "claim": ["Fastly account > new Service > add the hostname as a Domain in that service's config."]},
     {"name": "Pantheon", "cnames": ["pantheonsite.io"],
-     "sigs": ["The gods are wise", "404 error unknown site"]},
+     "sigs": ["The gods are wise", "404 error unknown site"],
+     "claim": ["Free Pantheon account > new site > Domains > add the target hostname."]},
     {"name": "Tumblr", "cnames": ["domains.tumblr.com"],
      "sigs": ["Whatever you were looking for doesn't currently exist",
-              "There's nothing here."]},
+              "There's nothing here."],
+     "claim": ["New Tumblr blog > Settings > use a custom domain > enter the target hostname."]},
     {"name": "WordPress", "cnames": [".wordpress.com"],
-     "sigs": ["Do you want to register"]},
+     "sigs": ["Do you want to register"],
+     "claim": ["New WordPress.com site > domain mapping needs a paid plan upgrade — worth it only",
+               "if payout looks likely to cover it."]},
     {"name": "Ghost", "cnames": [".ghost.io"],
-     "sigs": ["The thing you were looking for is no longer here", "Domain error"]},
+     "sigs": ["The thing you were looking for is no longer here", "Domain error"],
+     "claim": ["Ghost(Pro) site > custom domain under site settings (may need a paid plan)."]},
     {"name": "Surge.sh", "cnames": ["surge.sh"],
-     "sigs": ["project not found"]},
+     "sigs": ["project not found"],
+     "claim": ["npm i -g surge && surge  — when it asks for a domain, give the target hostname.",
+               "Free, works immediately if the name's unclaimed."]},
     {"name": "Bitbucket", "cnames": ["bitbucket.io"],
-     "sigs": ["Repository not found"]},
+     "sigs": ["Repository not found"],
+     "claim": ["Same idea as GitHub Pages: new repo on your account, configure the custom domain",
+               "in repo settings. Bitbucket's static-pages product has shifted over the years —",
+               "double check it's still live before relying on this one."]},
     {"name": "Unbounce", "cnames": ["unbouncepages.com"],
-     "sigs": ["The requested URL was not found on this server"]},
+     "sigs": ["The requested URL was not found on this server"],
+     "claim": ["Unbounce account > page > custom domain setting > enter the target hostname."]},
     {"name": "Readme.io", "cnames": [".readme.io"],
-     "sigs": ["Project doesnt exist... yet!"]},
+     "sigs": ["Project doesnt exist... yet!"],
+     "claim": ["Free ReadMe project > custom domain setting > enter the target hostname."]},
     {"name": "Azure", "cnames": [".azurewebsites.net", ".cloudapp.net", ".trafficmanager.net"],
-     "sigs": ["404 Web Site not found"]},
+     "sigs": ["404 Web Site not found"],
+     "claim": ["Create a matching Azure resource (Web App / Cloud Service / Traffic Manager profile",
+               "— match the CNAME type) > add the hostname as a custom domain binding."]},
     {"name": "Netlify", "cnames": [".netlify.app", ".netlify.com"],
-     "sigs": ["Not Found - Request ID"]},
+     "sigs": ["Not Found - Request ID"],
+     "claim": ["New Netlify site (drag-and-drop a folder is enough) > Domain management >",
+               "Add custom domain > enter the target hostname."]},
 ]
 
 
@@ -156,7 +191,8 @@ def check_takeover(host, info):
     st, body = fetch(base_url(host, info) + "/")
     if any(sig in body for sig in fp["sigs"]):
         return {"kind": "takeover", "host": host, "service": fp["name"],
-                "cname": cnames, "status": st, "confirmed": True}
+                "cname": cnames, "status": st, "confirmed": True,
+                "claim": fp.get("claim")}
     if st in DEAD:
         return {"kind": "takeover?", "host": host, "service": fp["name"],
                 "cname": cnames, "status": st, "confirmed": False}
@@ -213,6 +249,13 @@ def format_finding(f):
     tail += ' · matched signature' if confirmed else ' · no signature — verify manually'
     lines.append("\u21B3 " + tail)
     lines.append(f"\U0001F517 https://{esc(f['host'])}")
+
+    if confirmed and f.get("claim"):
+        lines.append("")
+        lines.append("<b>To claim it yourself:</b>")
+        for step in f["claim"]:
+            lines.append(esc(step))
+
     return "\n".join(lines)
 
 
