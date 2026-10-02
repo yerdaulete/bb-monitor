@@ -230,7 +230,47 @@ def rank(f):
     return (order.get(f["kind"], 3), f["host"])
 
 
+def group_shared_takeovers(items):
+    """Confirmed takeovers that share the exact same CNAME target are very likely ONE
+    underlying resource (one distribution/bucket/app with many alternate hostnames
+    attached), not N independent findings — claiming/verifying one tells you the
+    status of all of them. Groups those together; everything else passes through
+    unchanged."""
+    buckets = {}
+    rest = []
+    for f in items:
+        if f["kind"] == "takeover" and f.get("confirmed"):
+            key = (f["service"], tuple(sorted(f["cname"])))
+            buckets.setdefault(key, []).append(f)
+        else:
+            rest.append(f)
+    grouped, rest2 = [], rest
+    for (service, cname), group in buckets.items():
+        if len(group) > 1:
+            grouped.append({"group": True, "service": service, "cname": list(cname),
+                            "hosts": sorted(f["host"] for f in group),
+                            "claim": group[0].get("claim")})
+        else:
+            rest2.append(group[0])
+    return grouped + rest2
+
+
 def format_finding(f):
+    if f.get("group"):
+        lines = [f"<b>\U0001F534 TAKEOVER (likely) \u00b7 {esc(f['service'])}</b>",
+                 f"<b>{len(f['hosts'])} hostnames share this CNAME \u2014 verify ONCE, "
+                 f"applies to all:</b>"]
+        for h in f["hosts"]:
+            lines.append(f"<code>{esc(h)}</code>")
+        lines.append("CNAME: " + esc(", ".join(f["cname"][:2])))
+        lines.append("\u21B3 matched signature on every one of them")
+        if f.get("claim"):
+            lines.append("")
+            lines.append("<b>To claim (once \u2014 not per hostname):</b>")
+            for step in f["claim"]:
+                lines.append(esc(step))
+        return "\n".join(lines)
+
     if f["kind"] == "leak":
         lines = [f"<b>\U0001F534 LEAK · {esc(f['label'])}</b>",
                  f"<code>{esc(f['host'] + f['path'])}</code>"]
@@ -348,10 +388,12 @@ def main():
     new = [f for f in findings if key_of(f) not in seen]
     print(f"[checks] {len(findings)} finding(s), {len(new)} new")
 
+    to_send = group_shared_takeovers(new)
     sent = 0
-    for f in new:
+    for f in to_send:
         if sent >= MAX_MSGS:
-            tg_send(f"\u2795 +{len(new) - sent} more new findings this run (raise MAX_MSGS).")
+            tg_send(f"\u2795 +{len(to_send) - sent} more new findings this run "
+                    f"(raise MAX_MSGS).")
             break
         tg_send(format_finding(f))
         sent += 1
