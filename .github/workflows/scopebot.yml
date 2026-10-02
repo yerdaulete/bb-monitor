@@ -2,7 +2,9 @@ name: scopebot
 
 on:
   schedule:
-    - cron: '*/15 * * * *'   # poll Telegram for /add /remove /list commands
+    - cron: '*/5 * * * *'   # poll Telegram for /add /remove /list commands — 5 min is
+                             # about as tight as GitHub's scheduler reliably supports;
+                             # actual delivery can still lag a few min on GitHub's end
   workflow_dispatch: {}
 
 permissions:
