@@ -20,6 +20,7 @@
 "takeover?:internal.indriverapp.com",
 "takeover?:messenger.eu-east-1.indriverapp.com",
 "takeover?:pages.indriverapp.com",
+"takeover?:start.indriver.io",
 "takeover?:static.indriverapp.com",
 "takeover?:terra-1.indriverapp.com",
 "takeover?:terra-2.indriverapp.com",
@@ -30,5 +31,5 @@
 "takeover?:terra-7.indriverapp.com",
 "takeover?:terra-mtn.indriverapp.com"
 ],
-"updated": "2026-10-02T18:22:24Z"
+"updated": "2026-10-03T21:58:59Z"
 }
