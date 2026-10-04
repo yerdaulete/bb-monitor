@@ -156,19 +156,21 @@ LEAK_PATHS = [
 
 # ----------------------------------------------------------------------- http
 def fetch(url):
-    """Return (status:int|None, body:str). Never raises."""
+    """Return (status:int|None, body:str, final_url:str) — final_url is where we
+    landed after redirects, which is how a GitHub private-Pages auth gate gets
+    noticed. Never raises."""
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "recon-checks/1.0"})
         with urllib.request.urlopen(req, timeout=TIMEOUT, context=_SSL) as r:
-            return r.status, r.read(16384).decode("utf-8", "replace")
+            return r.status, r.read(16384).decode("utf-8", "replace"), r.geturl()
     except urllib.error.HTTPError as e:
         try:
             body = e.read(16384).decode("utf-8", "replace")
         except Exception:
             body = ""
-        return e.code, body
+        return e.code, body, getattr(e, "url", url)
     except Exception:
-        return None, ""
+        return None, "", url
 
 
 def base_url(host, info):
@@ -188,7 +190,12 @@ def check_takeover(host, info):
                if any(c in joined for c in f["cnames"])), None)
     if not fp:
         return None
-    st, body = fetch(base_url(host, info) + "/")
+    st, body, final_url = fetch(base_url(host, info) + "/")
+    # GitHub redirects a CLAIMED-but-private Pages site through its own auth gate —
+    # that's proof the site exists and is owned, not a dangling-CNAME candidate.
+    if "github.com/pages/auth" in final_url or \
+       "which does not have access to this Page" in body:
+        return None
     if any(sig in body for sig in fp["sigs"]):
         return {"kind": "takeover", "host": host, "service": fp["name"],
                 "cname": cnames, "status": st, "confirmed": True,
@@ -202,10 +209,10 @@ def check_takeover(host, info):
 def check_leaks(host, info):
     base = base_url(host, info)
     # soft-404 baseline: a random path that should not exist
-    _, baseline = fetch(base + "/zz-%s-nope" % int(time.time()))
+    _, baseline, _ = fetch(base + "/zz-%s-nope" % int(time.time()))
     out = []
     for path, valid, label in LEAK_PATHS:
-        st, body = fetch(base + path)
+        st, body, _ = fetch(base + path)
         if st == 200 and body and body != baseline and valid(body):
             snippet = body.strip().splitlines()[0][:80] if body.strip() else ""
             out.append({"kind": "leak", "host": host, "path": path,
