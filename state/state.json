@@ -9062,6 +9062,20 @@
 ],
 "url": "https://hackerone.com/box_private"
 },
+"hackerone:brave": {
+"name": "Brave Software",
+"payout": "",
+"pays": true,
+"platform": "hackerone",
+"scope": [
+"apple_store_app_id::com.brave.ios.browser",
+"downloadable_executables::Brave Browser Desktop",
+"google_play_app_id::com.brave.browser",
+"other::Brave websites",
+"source_code::https://github.com/brave/*, https://github.com/brave-intl/*"
+],
+"url": "https://hackerone.com/brave"
+},
 "hackerone:braze_inc": {
 "name": "Braze, Inc.",
 "payout": "",
@@ -46086,6 +46100,7 @@
 "url::coalition-qa.nba.com",
 "url::comets-dev.wnba.com",
 "url::comets-qa.wnba.com",
+"url::comets-uat.wnba.com",
 "url::comets.wnba.com",
 "url::communityassist.nba.com",
 "url::contact-dev.nba.com",
@@ -49471,7 +49486,9 @@
 "platform": "hackerone",
 "scope": [
 "url::1040.com",
+"url::drakesoftware.com",
 "url::securefilepro.com",
+"url::taxact.com",
 "url::taxwell.com",
 "url::taxwell.org"
 ],
@@ -52204,17 +52221,6 @@
 ],
 "url": "https://www.intigriti.com/programs/dpgm/hetparool/detail"
 },
-"intigriti:4352dcef-dfc5-4d74-8fd8-9bef5aa16f18": {
-"name": "Skoda Auto Bug Bounty Program",
-"payout": "5,000 EUR",
-"pays": true,
-"platform": "intigriti",
-"scope": [
-"android::cz.skodaauto.myskoda",
-"ios::https://apps.apple.com/cz/app/my%C5%A1koda/id1632202810"
-],
-"url": "https://www.intigriti.com/programs/skodaauto/skodaautoprivatebugbountyprogram/detail"
-},
 "intigriti:43c4b274-ccbd-4ea2-8047-d40b0b4205ac": {
 "name": "Libelle",
 "payout": "2,200 EUR",
@@ -54145,16 +54151,26 @@
 "pays": true,
 "platform": "intigriti",
 "scope": [
-"android::com.here.app.maps",
-"ios::955837609",
-"other::Leaked/compromised employee accounts *.here.com",
-"url::https://jaguar.here.com",
-"url::https://landrover.here.com",
-"wildcard::*.account.api.here.com",
-"wildcard::*.account.here.com",
+"android::HERE WeGo Android",
+"ios::HERE WeGo iOS",
+"other::All other related services owned by HERE",
+"other::Leaked Service Credentials",
+"other::Leaked/Compromised Employee Credentials",
+"url::account.api.here.com",
+"url::account.here.com",
+"url::listing.here.com",
+"url::mapcreator.here.com",
+"url::mobilitygraph.hereapi.com",
+"url::registry.service.api.platform.here.com",
+"url::search.hereapi.com",
+"url::transit.hereapi.com",
+"url::vector.hereapi.com",
+"url::xyz.api.here.com",
+"wildcard::*.data.api.platform.here.com",
 "wildcard::*.here.com",
 "wildcard::*.hereapi.com",
-"wildcard::*.mobilitygraph.hereapi.com",
+"wildcard::*.metrics.platform.here.com",
+"wildcard::*.platform.here.com",
 "wildcard::*.router.hereapi.com",
 "wildcard::*.scbe.api.here.com",
 "wildcard::*.subp-router.hereapi.com"
