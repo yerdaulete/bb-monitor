@@ -5291,9 +5291,6 @@
 "platform": "bugcrowd",
 "scope": [
 "android::https://play.google.com/store/apps/details?id=com.viator.mobile.android&hl=en_US&gl=US",
-"api::https://www.toursgds.com/",
-"api::https://www.toursgds.com/SupplierService?wsdl",
-"api::https://www.toursgds.com/ToursGdsService?wsdl",
 "ios::https://apps.apple.com/us/app/viator-tours-activities/id434832826",
 "website::https://*.viator.com",
 "website::https://*.viatorinc.com",
@@ -54145,38 +54142,6 @@
 ],
 "url": "https://www.intigriti.com/programs/dpgm/tweakers/detail"
 },
-"intigriti:e85b4b33-7785-43b5-a5aa-5bcd226688b4": {
-"name": "Here Technologies",
-"payout": "2,000 EUR",
-"pays": true,
-"platform": "intigriti",
-"scope": [
-"android::HERE WeGo Android",
-"ios::HERE WeGo iOS",
-"other::All other related services owned by HERE",
-"other::Leaked Service Credentials",
-"other::Leaked/Compromised Employee Credentials",
-"url::account.api.here.com",
-"url::account.here.com",
-"url::listing.here.com",
-"url::mapcreator.here.com",
-"url::mobilitygraph.hereapi.com",
-"url::registry.service.api.platform.here.com",
-"url::search.hereapi.com",
-"url::transit.hereapi.com",
-"url::vector.hereapi.com",
-"url::xyz.api.here.com",
-"wildcard::*.data.api.platform.here.com",
-"wildcard::*.here.com",
-"wildcard::*.hereapi.com",
-"wildcard::*.metrics.platform.here.com",
-"wildcard::*.platform.here.com",
-"wildcard::*.router.hereapi.com",
-"wildcard::*.scbe.api.here.com",
-"wildcard::*.subp-router.hereapi.com"
-],
-"url": "https://www.intigriti.com/programs/heretechnologies/heretechnologies/detail"
-},
 "intigriti:e8b2e8ca-1fb2-4c17-933f-2a1f5cfb7da7": {
 "name": "Driessen Vulnerability Disclosure Program",
 "payout": "",
@@ -55508,7 +55473,7 @@
 },
 "yeswehack:swiss-post": {
 "name": "Swiss Post",
-"payout": "€10,000",
+"payout": "€5,000",
 "pays": true,
 "platform": "yeswehack",
 "scope": [
